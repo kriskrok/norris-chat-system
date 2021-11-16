@@ -14,7 +14,7 @@ Norris Chat System is an instant messaging system for *Distributed Systems* -cou
 
 *Description of different node, their roles and functionalities.*
 
-
+First node is a host node, that handles joining of other nodes.
 
 ## Messages
 
