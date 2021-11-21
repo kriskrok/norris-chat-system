@@ -12,13 +12,15 @@ The project will be implemented with Python, Docker and possibly FastAPI or Rabb
 
 ## Nodes
 
-A user is a single node in the system. There are no centralized servers, so the whole network consists of user nodes. All the nodes are pluripotent, so depending on the situation they can be any of the three variations:
+A user is a single node in the system. There are no centralized servers, so the whole network consists of user nodes. All the nodes are pluripotent, so depending on the situation they can take either of these roles:
 
-1) Host node. This is a special role for one user node that is needed for initializing connection of a new node. When a request to join the chat system comes, the host node will respond with information about all the nodes in the network, so that the new node can initialize communication paths. There must always be at least one host node, and the first node to start the network automatically gets assigned this role.
+1) User node. The normal node type that can send and receive broadcasts from the network. When a new user node connects to the network, it will be given a unique name by the host, which is shown to all other users when a message is sent.
+
+2) Host node. This is a special role for one user node that is needed for initializing connection of a new node. When a request to join the chat system comes, the host node will respond with information about all the nodes in the network, so that the new node can initialize communication paths. There must always be at least one host node, and the first node to start the network automatically gets assigned this role. In addition, the host node has all the user node capabilities, and from the usage point of view does not differ from a user node.
 
 ## Messages
 
-*Description of messages sent and received (syntax and semantics).*
+In the chat message, a node sends message containing timestamp, it's unique identifier and the message. 
 
 
 
