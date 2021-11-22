@@ -1,4 +1,4 @@
-# Design Plan
+# Design Plan - group 18
 
 Group members **Kristian Krok**, **Laura North**, **Aksel Linros** and **Niko Häppölä**.
 
