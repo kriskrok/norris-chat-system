@@ -7,8 +7,12 @@ Norris Chat System is an instant messaging system for *Distributed Systems* -cou
 ## Description of the topic
 
 In this project we will create a distributed chat system, where users can broadcast messages to every other user in the network. All users are free to join and leave at any time, and will see the messages sent in the same order as everyone else. Receiving messages happens only when user is online, and the system does not save any previous messages.
+
 The project will be implemented with Python, Docker and possibly FastAPI or RabbitMQ as the message broker.
 
+### Architecture sketch
+
+![architecture_sketch](https://github.com/kriskrok/norris-file-system/blob/main/documents/system_architecture.drawio.png)
 
 ## Nodes
 
