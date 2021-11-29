@@ -1,6 +1,8 @@
 anyio==3.3.4
 asgiref==3.4.1
 asyncio==3.4.3
+certifi==2021.10.8
+charset-normalizer==2.0.8
 click==8.0.3
 contextlib2==21.6.0
 contextvars==2.4
@@ -13,11 +15,14 @@ immutables==0.16
 importlib-metadata==4.8.2
 pkg-resources==0.0.0
 pydantic==1.8.2
+PySimpleGUI==4.55.1
 python-dotenv==0.19.2
 PyYAML==6.0
+requests==2.26.0
 sniffio==1.2.0
 starlette==0.16.0
 typing-extensions==3.10.0.2
+urllib3==1.26.7
 uvicorn==0.15.0
 uvloop==0.14.0
 watchgod==0.7
