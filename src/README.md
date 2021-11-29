@@ -6,8 +6,16 @@ Install dependencies with
 pip install -r requirements.txt
 ```
 
-and run the server with
+Then configure two env variables: CHATHOST and MYIP. CHATHOST should be the IP of the host node, and MYIP your own.
+For example if host node IP was 192.168.124.63 and my IP 192.168.124.12:
 
 ```
-uvicorn main:app
+export MYIP='192.168.124.12'
+export CHATHOST='92.168.124.63'
+```
+
+Start the node with
+
+```
+python3 main.py
 ```
