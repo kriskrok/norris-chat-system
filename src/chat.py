@@ -27,8 +27,8 @@ class Client(threading.Thread):
     def run(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            host = raw_input("Enter the hostname\n>>")
-            port = int(raw_input("Enter the port number\n>>"))
+            host = input("Enter the hostname\n>>")
+            port = int(input("Enter the port number\n>>"))
         except EOFError:
             print("Error occurred!")
             return 1
