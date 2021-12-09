@@ -39,7 +39,7 @@ class Client(threading.Thread):
         print("Connected succesfully!\n")
         while 1:
             print("Waiting for message\n")
-            message = raw_input('>>')
+            message = input('>>')
             if message == 'exit':
                 break
             if message == '':
