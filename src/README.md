@@ -19,3 +19,8 @@ Start the node with
 ```
 python3 main.py
 ```
+
+
+## server.py instructions
+
+Environment variable is HOSTNAME. Use otherwise instructions above.
