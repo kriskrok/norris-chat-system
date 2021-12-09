@@ -1,8 +1,9 @@
 import socket
 import threading
+import os
 
 # Connections
-host = '192.168.122.175'
+host = os.environ['HOSTNAME']
 port = 50001
 
 # Start server

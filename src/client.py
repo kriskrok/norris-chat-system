@@ -1,12 +1,14 @@
 import socket
 import threading
+import os
 
 # Choose nickname
 nickname = input("Choose your nickname: ")
+hostname = os.environ['HOSTNAME']
 
 # Connect to server
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect(('192.168.122.175', 50001))
+client.connect((hostname, 50001))
 
 # Listen server
 def receive():
