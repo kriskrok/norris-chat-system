@@ -1,52 +1,90 @@
 import socket
 import threading
-import sys
+import os
 import time
 
+host = os.environ['HOSTNAME']
+port = 50001
+clients = []
+nicknames = []
+
 class Server(threading.Thread):
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind((host, port))
+    server.listen()
+    # Broadcast messages
+    def broadcast(self, message):
+        for client in clients:
+            client.send(message)
+    
+    def handle(self, client):
+        while True:
+            try:
+                # Send messages
+                message = client.recv(1024)
+                self.broadcast(message)
+            except:
+                # If client not found, remove it
+                index = clients.index(client)
+                clients.remove(client)
+                client.close()
+                nickname = nicknames[index]
+                self.broadcast('{} left!'.format(nickname).encode('ascii'))
+                nicknames.remove(nickname)
+                break
+
     def run(self):
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        print("Started server!\n")
-        hostNode = ''
-        port = 51001
-        self.sock.bind((hostNode, port))
-        self.sock.listen(1)
-        print("Listening on port %d\n" %port)
-        (clientname, address) = self.sock.accept()
-        print("Connection from %s\n" % str(address))
-        while 1:
-            chunk = clientname.recv(1024)
-            print(str(address) + ':' + chunk)
+        while True:
+            # Accept connection
+            client, address = self.server.accept()
+            print("Connected with {}".format(str(address)))
+
+            # Ask nickname
+            client.send('NICK'.encode('ascii'))
+            nickname = client.recv(1024).decode('ascii')
+            nicknames.append(nickname)
+            clients.append(client)
+
+            # Print nickname
+            print("Nickname is {}".format(nickname))
+            self.broadcast(("{} joined!".format(nickname).encode('ascii')))
+            client.send('Connected to server!'.encode('ascii'))
+
+            # Start thread for this client
+            thread = threading.Thread(target=self.handle, args=(client, ))
+            thread.start()
 
 class Client(threading.Thread):
-    def connect(self, host, port):
-        self.sock.connect((host, port))
-    def client(self, host, port, message):
-        sent = self.sock.send(message)
-        print("Message sent\n")
-    def run(self):
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            host = input("Enter the hostname\n>>")
-            port = int(input("Enter the port number\n>>"))
-        except EOFError:
-            print("Error occurred!")
-            return 1
+    # Choose nickname
+    nickname = input("Choose your nickname: ")
 
-        print("Connecting...\n")
-        s = ''
-        self.connect(host, port)
-        print("Connected succesfully!\n")
-        while 1:
-            print("Waiting for message\n")
-            message = input('>>')
-            if message == 'exit':
+    # Connect to server
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client.connect((host, port))
+    
+    def receive(self):
+        while True:
+            try:
+                message = self.client.recv(1024).decode('utf8')
+                if message == 'NICK':
+                    self.client.send(self.nickname.encode('utf8'))
+                else:
+                    print(message)
+            except:
+                print("An error occurred!")
+                self.client.close()
                 break
-            if message == '':
-                continue
-            print("Sending message...\n")
-            self.client(host, port, message)
-        return(1)
+
+    def write(self):
+        while True:
+            message = '{}: {}'.format(self.nickname, input(''))
+            self.client.send(message.encode('utf8'))
+    
+    def run(self):
+        receive_thread = threading.Thread(target=self.receive)
+        receive_thread.start()
+        write_thread = threading.Thread(target=self.write)
+        write_thread.start()
 
 if __name__=='__main__':
     server = Server()
