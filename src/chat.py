@@ -4,14 +4,27 @@ import os
 import time
 
 host = os.environ['HOSTNAME']
+errorhost = os.environ['ERRORHOST']
 port = 50001
 clients = []
 nicknames = []
 
 class Server(threading.Thread):
+    #Server starts for every node, but only one is the host. Handle it and the election here
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind((host, port))
     server.listen()
+    host_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    def ping(self):
+        while True:
+            time.sleep(1)
+            try:
+                self.host_socket.sendto('hello'.encode('utf8'), (host, port))
+                print("Host ping success!")
+            except:
+                print("Host ping failed!")
+
     # Broadcast messages
     def broadcast(self, message):
         for client in clients:
@@ -29,7 +42,7 @@ class Server(threading.Thread):
                 clients.remove(client)
                 client.close()
                 nickname = nicknames[index]
-                self.broadcast('{} left!'.format(nickname).encode('ascii'))
+                self.broadcast('{} left!'.format(nickname).encode('utf8'))
                 nicknames.remove(nickname)
                 break
 
@@ -40,19 +53,21 @@ class Server(threading.Thread):
             print("Connected with {}".format(str(address)))
 
             # Ask nickname
-            client.send('NICK'.encode('ascii'))
-            nickname = client.recv(1024).decode('ascii')
+            client.send('NICK'.encode('utf8'))
+            nickname = client.recv(1024).decode('utf8')
             nicknames.append(nickname)
             clients.append(client)
 
             # Print nickname
             print("Nickname is {}".format(nickname))
-            self.broadcast(("{} joined!".format(nickname).encode('ascii')))
-            client.send('Connected to server!'.encode('ascii'))
+            self.broadcast(("{} joined!".format(nickname).encode('utf8')))
+            client.send('Connected to server!'.encode('utf8'))
 
             # Start thread for this client
             thread = threading.Thread(target=self.handle, args=(client, ))
             thread.start()
+            ping_thread = threading.Thread(target=self.ping)
+            ping_thread.start()
 
 class Client(threading.Thread):
     # Choose nickname
