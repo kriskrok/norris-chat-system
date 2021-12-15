@@ -21,12 +21,14 @@ class Server(threading.Thread):
     host_socket.bind(('', udp_port))
 
     def check_host_ping_time(self):
-        while True:
-            time.sleep(16)
-            if time.time() - server_timestamp > 15:
-                print("Host is dead. Long live the host")
-            else:
-                print("Host seems healthy")
+        if host != '0.0.0.0':
+            while True:
+                time.sleep(16)
+                time_delta = time.time() - server_timestamp
+                if time_delta > 15:
+                    print(f'Host is dead, very dead been for {time_delta} seconds. Long live the host')
+                else:
+                    print("Host seems healthy")
     
     def receive_ping(self):
         while True:
