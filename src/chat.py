@@ -3,27 +3,48 @@ import threading
 import os
 import time
 
-host = os.environ['HOSTNAME']
-errorhost = os.environ['ERRORHOST']
+#host = os.environ['HOSTNAME']
+host = '127.0.0.1'
+my_ip = os.environ['MYIP'] #127.0.0.1
 port = 50001
+udp_port = 50002
 clients = []
 nicknames = []
+server_timestamp = time.time()
 
 class Server(threading.Thread):
     #Server starts for every node, but only one is the host. Handle it and the election here
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind((host, port))
+    server.bind((my_ip, port))
     server.listen()
+    # 1-to-1 UDP action
     host_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    host_socket.bind((my_ip, udp_port))
+
+    def receive_ping(self):
+        while True:
+            time.sleep(5)
+            print('Hei äiti!')
+            try:
+                message, addr = self.host_socket.recvfrom(1024) # buffer size is 1024 bytes
+                print("received message: %s" % message)
+
+                if message == 'hello':
+                    server_timestamp = time.time() #seconds since epoch i.e. 1.1.1970
+                    print(server_timestamp)
+            except:
+                print("An error occured, the final days are upon us!")
+            
 
     def ping(self):
-        while True:
-            time.sleep(1)
-            try:
-                self.host_socket.sendto('hello'.encode('utf8'), (host, port))
-                print("Host ping success!")
-            except:
-                print("Host ping failed!")
+        if host != '127.0.0.1':
+            while True:
+                time.sleep(10)
+                try:
+                    self.host_socket.sendto('hello'.encode('utf8'), (host, port))
+                    print("Host ping success!")
+                except:
+                    print("Host ping failed!")
 
     # Broadcast messages
     def broadcast(self, message):
@@ -68,6 +89,8 @@ class Server(threading.Thread):
             thread.start()
             ping_thread = threading.Thread(target=self.ping)
             ping_thread.start()
+            receive_ping_thread = threading.Thread(target=self.receive_ping)
+            receive_ping_thread.start()
 
 class Client(threading.Thread):
     # Choose nickname
