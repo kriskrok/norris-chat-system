@@ -20,17 +20,24 @@ class Server(threading.Thread):
     host_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     host_socket.bind(('', udp_port))
 
+    def check_host_ping_time(self):
+        while True:
+            time.sleep(16)
+            if time.time() - server_timestamp > 15:
+                print("Host is dead. Long live the host")
+            else:
+                print("Host seems healthy")
     def receive_ping(self):
         while True:
             time.sleep(5)
             print('Hei äiti!')
             try:
                 message, addr = self.host_socket.recvfrom(1024) # buffer size is 1024 bytes
-                print("received message: %s" % message.decode('utf8'))
+                message = message.decode('utf8')
+                print("received message: %s" % message)
 
-                if message == 'hello':
-                    server_timestamp = time.time() #seconds since epoch i.e. 1.1.1970
-                    print(server_timestamp)
+                if message == 'ping':
+                    self.host_socket.sendto('pingok'.encode('utf8'), addr)
             except:
                 print("An error occured, the final days are upon us!")
             
@@ -39,11 +46,13 @@ class Server(threading.Thread):
         if host != '0.0.0.0':
             while True:
                 time.sleep(10)
-                #try:
-                self.host_socket.sendto('ping'.encode('utf8'), (host, udp_port))
-                print("Host ping success!")
-                #except:
-                #    print("Host ping failed!")
+                try:
+                    self.host_socket.sendto('ping'.encode('utf8'), (host, udp_port))
+                    message, addr = self.host_socket.recvfrom(1024)
+                    if message.decode('utf8') == 'pingok':
+                        self.server_timestamp = time.time()
+                except:
+                    print("Host ping failed!")
 
     # Broadcast messages
     def broadcast(self, message):
