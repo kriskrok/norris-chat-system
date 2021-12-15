@@ -18,7 +18,7 @@ class Server(threading.Thread):
     server.listen()
     # 1-to-1 UDP action
     host_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    host_socket.bind((my_ip, udp_port))
+    host_socket.bind(('', udp_port))
 
     def receive_ping(self):
         while True:
@@ -26,7 +26,7 @@ class Server(threading.Thread):
             print('Hei äiti!')
             try:
                 message, addr = self.host_socket.recvfrom(1024) # buffer size is 1024 bytes
-                print("received message: %s" % message)
+                print("received message: %s" % message.decode('utf8'))
 
                 if message == 'hello':
                     server_timestamp = time.time() #seconds since epoch i.e. 1.1.1970
@@ -39,11 +39,11 @@ class Server(threading.Thread):
         if host != '0.0.0.0':
             while True:
                 time.sleep(10)
-                try:
-                    self.host_socket.sendto('hello'.encode('utf8'), (host, udp_port))
-                    print("Host ping success!")
-                except:
-                    print("Host ping failed!")
+                #try:
+                self.host_socket.sendto('ping'.encode('utf8'), (host, udp_port))
+                print("Host ping success!")
+                #except:
+                #    print("Host ping failed!")
 
     # Broadcast messages
     def broadcast(self, message):
