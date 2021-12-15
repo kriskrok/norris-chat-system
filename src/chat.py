@@ -41,6 +41,9 @@ class Server(threading.Thread):
 
                 if message == 'ping':
                     self.host_socket.sendto('pingok'.encode('utf8'), addr)
+                
+                if message == 'pingok':
+                    self.server_timestamp = time.time()
             except:
                 print("An error occured, the final days are upon us!")
             
@@ -51,9 +54,6 @@ class Server(threading.Thread):
                 time.sleep(10)
                 try:
                     self.host_socket.sendto('ping'.encode('utf8'), (host, udp_port))
-                    message, addr = self.host_socket.recvfrom(1024)
-                    if message.decode('utf8') == 'pingok':
-                        self.server_timestamp = time.time()
                 except:
                     print("Host ping failed!")
 
