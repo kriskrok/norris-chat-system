@@ -27,6 +27,7 @@ class Server(threading.Thread):
                 print("Host is dead. Long live the host")
             else:
                 print("Host seems healthy")
+    
     def receive_ping(self):
         while True:
             time.sleep(5)
@@ -103,6 +104,8 @@ class Server(threading.Thread):
         ping_thread.start()
         receive_ping_thread = threading.Thread(target=self.receive_ping)
         receive_ping_thread.start()
+        check_host_ping_thread = threading.Thread(target=self.check_host_ping_time)
+        check_host_ping_thread.start()
 
 class Client(threading.Thread):
     # Choose nickname
