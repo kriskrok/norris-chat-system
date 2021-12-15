@@ -66,7 +66,7 @@ class Server(threading.Thread):
                 nicknames.remove(nickname)
                 break
 
-    def run(self):
+    def accept(self):
         while True:
             # Accept connection
             client, address = self.server.accept()
@@ -86,10 +86,14 @@ class Server(threading.Thread):
             # Start thread for this client
             thread = threading.Thread(target=self.handle, args=(client, ))
             thread.start()
-            ping_thread = threading.Thread(target=self.ping)
-            ping_thread.start()
-            receive_ping_thread = threading.Thread(target=self.receive_ping)
-            receive_ping_thread.start()
+
+    def run(self):
+        accept_thread = threading.Thread(target=self.ping)
+        accept_thread.start()
+        ping_thread = threading.Thread(target=self.ping)
+        ping_thread.start()
+        receive_ping_thread = threading.Thread(target=self.receive_ping)
+        receive_ping_thread.start()
 
 class Client(threading.Thread):
     # Choose nickname
