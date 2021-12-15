@@ -3,8 +3,7 @@ import threading
 import os
 import time
 
-#host = os.environ['HOSTNAME']
-host = '127.0.0.1'
+host = os.environ['HOSTNAME']
 my_ip = os.environ['MYIP'] #127.0.0.1
 port = 50001
 udp_port = 50002
@@ -37,11 +36,11 @@ class Server(threading.Thread):
             
 
     def ping(self):
-        if host != '127.0.0.1':
+        if host != '0.0.0.0':
             while True:
                 time.sleep(10)
                 try:
-                    self.host_socket.sendto('hello'.encode('utf8'), (host, port))
+                    self.host_socket.sendto('hello'.encode('utf8'), (host, udp_port))
                     print("Host ping success!")
                 except:
                     print("Host ping failed!")
