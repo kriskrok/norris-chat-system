@@ -88,7 +88,7 @@ class Server(threading.Thread):
             thread.start()
 
     def run(self):
-        accept_thread = threading.Thread(target=self.ping)
+        accept_thread = threading.Thread(target=self.accept)
         accept_thread.start()
         ping_thread = threading.Thread(target=self.ping)
         ping_thread.start()
