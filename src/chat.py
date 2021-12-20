@@ -28,14 +28,7 @@ class Server(threading.Thread):
         #This is called when the server class assumer its rightfull place as dear Leader
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind((host, port))
-        self.server_socket.listen(5)
-    
-    def init_leader_heartbeat(self):
-        # Close potentially binded socket if host, and turn it back on without binding
-        self.udp_socket.close()
-        self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        # TODO: ping-pong to LEADER
-        # receive client list
+        self.server_socket.listen()
 
     def init_client_heartbeat(self):
         self.udp_socket.bind(('', udp_port))
@@ -118,7 +111,6 @@ class Server(threading.Thread):
     def run(self):
         if leaderFlag:
             self.init_leader_functionality()
-            self.init_leader_heartbeat()
             accept_thread = threading.Thread(target=self.accept)
             accept_thread.start()
             ping_thread = threading.Thread(target=self.ping)
