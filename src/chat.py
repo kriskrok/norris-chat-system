@@ -18,14 +18,21 @@ class Server(threading.Thread):
     def __init__(self):
         print('Hello from server init')
         threading.Thread.__init__(self)
+        print(self.testi())
+    
+    def initLeaderFunctionality(self):
         #Server starts for every node, but only one is the host. Handle it and the election here
+        #This is called when the server class assumer its rightfull place as dear Leader
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_socket.bind((host, port))  # (host, port)
+        self.server_socket.bind((host, port))
         self.server_socket.listen(5)
-
+    
+    def initHeartbeat(self):
         # 1-to-1 UDP action
-        self.host_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.host_socket.bind(('', udp_port))
+        self.leader_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.leader_socket.bind(('', udp_port))
+        # TODO: ping-pong to LEADER
+        # receive client list
 
     def check_host_ping_time(self):
         if host != '0.0.0.0':
@@ -42,12 +49,12 @@ class Server(threading.Thread):
         while True:
             time.sleep(5)
             try:
-                message, addr = self.host_socket.recvfrom(1024) # buffer size is 1024 bytes
+                message, addr = self.leader_socket.recvfrom(1024) # buffer size is 1024 bytes
                 message = message.decode('utf8')
                 print("received message: %s" % message)
 
                 if message == 'ping':
-                    self.host_socket.sendto('pingok'.encode('utf8'), addr)
+                    self.leader_socket.sendto('pingok'.encode('utf8'), addr)
                 
                 if message == 'pingok':
                     self.server_timestamp = time.time()
@@ -60,7 +67,7 @@ class Server(threading.Thread):
             while True:
                 time.sleep(10)
                 try:
-                    self.host_socket.sendto('ping'.encode('utf8'), (host, udp_port))
+                    self.leader_socket.sendto('ping'.encode('utf8'), (host, udp_port))
                 except:
                     print("Host ping failed!")
 
@@ -103,8 +110,8 @@ class Server(threading.Thread):
             client.send('Connected to server!'.encode('utf8'))
 
             # Start thread for this client
-            thread = threading.Thread(target=self.handle, args=(client, ))
-            thread.start()
+            user_thread = threading.Thread(target=self.handle, args=(client, ))
+            user_thread.start()
 
     def run(self):
         accept_thread = threading.Thread(target=self.accept)
@@ -121,7 +128,7 @@ class Client(threading.Thread):
     #have the threads here as instance variables:
     def __init__(self):
         threading.Thread.__init__(self)
-        print('Hello from client init!' message)
+        print('Hello from client init!')
 
         # Choose nickname
         self.nickname = input("Kindly provide a nickname: ")
