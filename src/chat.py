@@ -168,7 +168,7 @@ if __name__=='__main__':
     server.daemon = True
     print("Starting server...\n")
     server.start()
-    time.sleep(1)
+    time.sleep(4)
     
     print("Starting client...")
     client = Client()
