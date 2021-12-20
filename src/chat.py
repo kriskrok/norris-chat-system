@@ -67,7 +67,7 @@ class Server(threading.Thread):
                 try:
                     self.udp_socket.sendto(pickle.dumps('ping'), (address[0], udp_port))
                     print('Pingasin')
-                    self.udp_socket.sendto(pickle.dumps(nicknames))
+                    self.udp_socket.sendto(pickle.dumps(nicknames), (address[0], udp_port))
                 except:
                     print("Ping failed!")
 
