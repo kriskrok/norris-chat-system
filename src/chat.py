@@ -46,6 +46,7 @@ class Server(threading.Thread):
     
     # This should prolly handle heartbeat and all the rest goodies
     def receive_ping(self):
+        global nicknames
         while True:
             try:
                 message, address = self.udp_socket.recvfrom(1024) # buffer size is 1024 bytes
@@ -66,6 +67,7 @@ class Server(threading.Thread):
                 try:
                     self.udp_socket.sendto(pickle.dumps('ping'), (address[0], udp_port))
                     print('Pingasin')
+                    self.udp_socket.sendto(pickle.dumps(nicknames))
                 except:
                     print("Ping failed!")
 
@@ -106,7 +108,6 @@ class Server(threading.Thread):
             print("Nickname is {}".format(nickname))
             self.broadcast(pickle.dumps("{} joined!\n".format(nickname)))
             client_socket.send(pickle.dumps('Connected to server!'))
-            client_socket.send(pickle.dumps(nicknames))
 
             # Start thread for this client
             user_thread = threading.Thread(target=self.handle, args=(client_socket, ))
