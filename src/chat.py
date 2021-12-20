@@ -14,57 +14,46 @@ clients = []
 nicknames = []
 
 class Server(threading.Thread):
-    server_socket = ''
-    leader_socket = ''
-    client_udp_socket = ''
 
     def __init__(self):
         print('Hello from server init')
         threading.Thread.__init__(self)
+        self.server_socket = ''
+        self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.server_timestamp = time.time()
 
     
-    def initLeaderFunctionality(self):
+    def init_leader_functionality(self):
         #Server starts for every node, but only one is the host. Handle it and the election here
         #This is called when the server class assumer its rightfull place as dear Leader
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind((host, port))
         self.server_socket.listen(5)
     
-    def initLeaderHeartbeat(self):
-        # 1-to-1 UDP action
-        self.leader_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    def init_leader_heartbeat(self):
+        # Close potentially binded socket if host, and turn it back on without binding
+        self.udp_socket.close()
+        self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         # TODO: ping-pong to LEADER
         # receive client list
 
-    def initClientHeartbeat(self):
-        self.client_udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.client_udp_socket.bind(('', udp_port))
+    def init_client_heartbeat(self):
+        self.udp_socket.bind(('', udp_port))
 
     def check_host_ping_time(self):
-        #Do something for this.
-            while True:
-                time.sleep(16)
-                time_delta = time.time() - self.server_timestamp
-                if time_delta > 15:
-                    print(f'Host is dead, very dead been for {time_delta} seconds. Long live the host')
-                else:
-                    print("Host seems healthy")
+        while True:
+            time.sleep(16)
+            time_delta = time.time() - self.server_timestamp
+            if time_delta > 15:
+                print(f'Host is dead, very dead been for {time_delta} seconds. Long live the host')
+            else:
+                print("Host seems healthy")
     
     # This should prolly handle heartbeat and all the rest goodies
     def receive_ping(self):
-        self.server_timestamp = time.time()
-        print('Yo')
         while True:
-            #time.sleep(4)
-            time_delta = time.time() - self.server_timestamp
-            if time_delta > 15:
-                print('Host is dead')
-                self.initVote()
-                break
             try:
-                print('Did I receive.')
                 message = self.client_udp_socket.recvfrom(1024) # buffer size is 1024 bytes
-                print('Katso äitiä ilman käsiä.')
                 message = message.decode('utf8')
                 print("received message: %s" % message) #Remove when everything is ok.
                 if message == 'ping':
@@ -77,10 +66,10 @@ class Server(threading.Thread):
             while True:
                 time.sleep(10)
                 try:
-                    self.leader_socket.sendto('ping'.encode('utf8'), address)
+                    self.leader_socket.sendto('ping'.encode('utf8'), (address, udp_port))
                     print('Pingasin')
                 except:
-                    print("Host ping failed!")
+                    print("Ping failed!")
 
     # Broadcast messages
     def broadcast(self, message):
@@ -128,14 +117,14 @@ class Server(threading.Thread):
 
     def run(self):
         if leaderFlag:
-            self.initLeaderFunctionality()
-            self.initLeaderHeartbeat()
+            self.init_leader_functionality()
+            self.init_leader_heartbeat()
             accept_thread = threading.Thread(target=self.accept)
             accept_thread.start()
-            #ping_thread = threading.Thread(target=self.ping)
-            #ping_thread.start()
+            ping_thread = threading.Thread(target=self.ping)
+            ping_thread.start()
         else:
-            self.initClientHeartbeat()
+            self.init_client_heartbeat()
             receive_ping_thread = threading.Thread(target=self.receive_ping)
             receive_ping_thread.start()
             check_host_ping_thread = threading.Thread(target=self.check_host_ping_time)
