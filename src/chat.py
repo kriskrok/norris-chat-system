@@ -70,6 +70,7 @@ class Server(threading.Thread):
                     self.udp_socket.sendto(pickle.dumps(nicknames), (address[0], udp_port))
                 except:
                     print("Ping failed!")
+                    break
 
     # Broadcast messages
     def broadcast(self, message):
