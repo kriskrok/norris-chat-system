@@ -88,7 +88,7 @@ class Server(threading.Thread):
                 clients.remove(client)
                 client.close()
                 nickname = nicknames[index]
-                self.broadcast(pickle.dumps('{} left!'.format(nickname)))
+                self.broadcast(pickle.dumps('{} left!'.format(nickname[0])))
                 nicknames.remove(nickname)
                 break
 
@@ -101,7 +101,7 @@ class Server(threading.Thread):
             # Ask nickname
             client_socket.send(pickle.dumps('NICK'))
             nickname = pickle.loads(client_socket.recv(1024))
-            nicknames.append(nickname)
+            nicknames.append((nickname, address))
             clients.append(client_socket)
 
             # Print nickname
