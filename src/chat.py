@@ -3,8 +3,11 @@ import threading
 import os
 import time
 
-host = os.environ['HOSTNAME']
-my_ip = os.environ['MYIP'] #127.0.0.1
+host = os.environ['HOSTNAME'] #IP for current Leader
+my_ip = os.environ['MYIP'] #This machine external IP
+
+leaderFlag = False
+
 port = 50001
 udp_port = 50002
 clients = []
@@ -12,13 +15,17 @@ nicknames = []
 server_timestamp = time.time()
 
 class Server(threading.Thread):
-    #Server starts for every node, but only one is the host. Handle it and the election here
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind((my_ip, port))
-    server.listen()
-    # 1-to-1 UDP action
-    host_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    host_socket.bind(('', udp_port))
+    def __init__(self):
+        print('Hello from server init')
+        threading.Thread.__init__(self)
+        #Server starts for every node, but only one is the host. Handle it and the election here
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.bind((host, port))  # (host, port)
+        self.server_socket.listen(5)
+
+        # 1-to-1 UDP action
+        self.host_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.host_socket.bind(('', udp_port))
 
     def check_host_ping_time(self):
         if host != '0.0.0.0':
@@ -30,10 +37,10 @@ class Server(threading.Thread):
                 else:
                     print("Host seems healthy")
     
+    # This should prolly handle heartbeat and all the rest goodies
     def receive_ping(self):
         while True:
             time.sleep(5)
-            print('Hei äiti!')
             try:
                 message, addr = self.host_socket.recvfrom(1024) # buffer size is 1024 bytes
                 message = message.decode('utf8')
@@ -81,7 +88,7 @@ class Server(threading.Thread):
     def accept(self):
         while True:
             # Accept connection
-            client, address = self.server.accept()
+            client, address = self.server_socket.accept()
             print("Connected with {}".format(str(address)))
 
             # Ask nickname
@@ -92,7 +99,7 @@ class Server(threading.Thread):
 
             # Print nickname
             print("Nickname is {}".format(nickname))
-            self.broadcast(("{} joined!".format(nickname).encode('utf8')))
+            self.broadcast(("{} joined!\n".format(nickname).encode('utf8')))
             client.send('Connected to server!'.encode('utf8'))
 
             # Start thread for this client
@@ -109,44 +116,54 @@ class Server(threading.Thread):
         check_host_ping_thread = threading.Thread(target=self.check_host_ping_time)
         check_host_ping_thread.start()
 
-class Client(threading.Thread):
-    # Choose nickname
-    nickname = input("Choose your nickname: ")
 
-    # Connect to server
-    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client.connect((host, port))
+class Client(threading.Thread):
+    #have the threads here as instance variables:
+    def __init__(self):
+        threading.Thread.__init__(self)
+        print('Hello from client init!' message)
+
+        # Choose nickname
+        self.nickname = input("Kindly provide a nickname: ")
+
+        # Connect to server
+        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client_socket.connect((host, port))
     
     def receive(self):
         while True:
             try:
-                message = self.client.recv(1024).decode('utf8')
+                message = self.client_socket.recv(1024).decode('utf8')
                 if message == 'NICK':
-                    self.client.send(self.nickname.encode('utf8'))
+                    self.client_socket.send(self.nickname.encode('utf8'))
                 else:
                     print(message)
             except:
                 print("An error occurred!")
-                self.client.close()
+                self.client_socket.close()
                 break
 
     def write(self):
         while True:
             message = '{}: {}'.format(self.nickname, input(''))
-            self.client.send(message.encode('utf8'))
+            if message == 'quit':
+                print()
+            self.client_socket.send(message.encode('utf8'))
     
     def run(self):
-        receive_thread = threading.Thread(target=self.receive)
-        receive_thread.start()
-        write_thread = threading.Thread(target=self.write)
-        write_thread.start()
+        self.receive_thread = threading.Thread(target=self.receive)
+        self.receive_thread.start()
+        self.write_thread = threading.Thread(target=self.write)
+        self.write_thread.start()
 
 if __name__=='__main__':
-    server = Server()
-    server.daemon = True
-    print("Starting server...")
-    server.start()
-    time.sleep(1)
+    if not leaderFlag:
+        server = Server()
+        server.daemon = True
+        print("Starting server...\n")
+        server.start()
+        time.sleep(1)
+    
     print("Starting client...")
     client = Client()
     print("Client started!")
