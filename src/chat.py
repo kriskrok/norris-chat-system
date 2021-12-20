@@ -46,7 +46,7 @@ class Server(threading.Thread):
     def receive_ping(self):
         while True:
             try:
-                message = self.udp_socket.recvfrom(1024) # buffer size is 1024 bytes
+                message, address = self.udp_socket.recvfrom(1024) # buffer size is 1024 bytes
                 message = message.decode('utf8')
                 print("received message: %s" % message) #Remove when everything is ok.
                 if message == 'ping':
