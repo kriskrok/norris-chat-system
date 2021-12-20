@@ -28,7 +28,7 @@ class Server(threading.Thread):
         #This is called when the server class assumer its rightfull place as dear Leader
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind((host, port))
-        self.server_socket.listen()
+        self.server_socket.listen(5)
 
     def init_client_heartbeat(self):
         self.udp_socket.bind(('', udp_port))
@@ -59,7 +59,7 @@ class Server(threading.Thread):
             while True:
                 time.sleep(10)
                 try:
-                    self.udp_socket.sendto('ping'.encode('utf8'), (address, udp_port))
+                    self.udp_socket.sendto('ping'.encode('utf8'), (address[0], udp_port))
                     print('Pingasin')
                 except:
                     print("Ping failed!")
@@ -113,8 +113,6 @@ class Server(threading.Thread):
             self.init_leader_functionality()
             accept_thread = threading.Thread(target=self.accept)
             accept_thread.start()
-            ping_thread = threading.Thread(target=self.ping)
-            ping_thread.start()
         else:
             self.init_client_heartbeat()
             receive_ping_thread = threading.Thread(target=self.receive_ping)
@@ -168,7 +166,7 @@ if __name__=='__main__':
     server.daemon = True
     print("Starting server...\n")
     server.start()
-    time.sleep(4)
+    time.sleep(1)
     
     print("Starting client...")
     client = Client()
