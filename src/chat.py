@@ -12,13 +12,16 @@ port = 50001
 udp_port = 50002
 clients = []
 nicknames = []
-server_timestamp = time.time()
 
 class Server(threading.Thread):
+    server_socket = ''
+    leader_socket = ''
+    client_udp_socket = ''
+
     def __init__(self):
         print('Hello from server init')
         threading.Thread.__init__(self)
-        print(self.testi())
+
     
     def initLeaderFunctionality(self):
         #Server starts for every node, but only one is the host. Handle it and the election here
@@ -27,18 +30,21 @@ class Server(threading.Thread):
         self.server_socket.bind((host, port))
         self.server_socket.listen(5)
     
-    def initHeartbeat(self):
+    def initLeaderHeartbeat(self):
         # 1-to-1 UDP action
         self.leader_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.leader_socket.bind(('', udp_port))
         # TODO: ping-pong to LEADER
         # receive client list
 
+    def initClientHeartbeat(self):
+        self.client_udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.client_udp_socket.bind(('', udp_port))
+
     def check_host_ping_time(self):
-        if host != '0.0.0.0':
+        #Do something for this.
             while True:
                 time.sleep(16)
-                time_delta = time.time() - server_timestamp
+                time_delta = time.time() - self.server_timestamp
                 if time_delta > 15:
                     print(f'Host is dead, very dead been for {time_delta} seconds. Long live the host')
                 else:
@@ -46,28 +52,33 @@ class Server(threading.Thread):
     
     # This should prolly handle heartbeat and all the rest goodies
     def receive_ping(self):
+        self.server_timestamp = time.time()
+        print('Yo')
         while True:
-            time.sleep(5)
+            #time.sleep(4)
+            time_delta = time.time() - self.server_timestamp
+            if time_delta > 15:
+                print('Host is dead')
+                self.initVote()
+                break
             try:
-                message, addr = self.leader_socket.recvfrom(1024) # buffer size is 1024 bytes
+                print('Did I receive.')
+                message = self.client_udp_socket.recvfrom(1024) # buffer size is 1024 bytes
+                print('Katso äitiä ilman käsiä.')
                 message = message.decode('utf8')
-                print("received message: %s" % message)
-
+                print("received message: %s" % message) #Remove when everything is ok.
                 if message == 'ping':
-                    self.leader_socket.sendto('pingok'.encode('utf8'), addr)
-                
-                if message == 'pingok':
                     self.server_timestamp = time.time()
             except:
                 print("An error occured, the final days are upon us!")
             
 
-    def ping(self):
-        if host != '0.0.0.0':
+    def ping(self, address):
             while True:
                 time.sleep(10)
                 try:
-                    self.leader_socket.sendto('ping'.encode('utf8'), (host, udp_port))
+                    self.leader_socket.sendto('ping'.encode('utf8'), address)
+                    print('Pingasin')
                 except:
                     print("Host ping failed!")
 
@@ -95,33 +106,40 @@ class Server(threading.Thread):
     def accept(self):
         while True:
             # Accept connection
-            client, address = self.server_socket.accept()
+            client_socket, address = self.server_socket.accept()
             print("Connected with {}".format(str(address)))
 
             # Ask nickname
-            client.send('NICK'.encode('utf8'))
-            nickname = client.recv(1024).decode('utf8')
+            client_socket.send('NICK'.encode('utf8'))
+            nickname = client_socket.recv(1024).decode('utf8')
             nicknames.append(nickname)
-            clients.append(client)
+            clients.append(client_socket)
 
             # Print nickname
             print("Nickname is {}".format(nickname))
             self.broadcast(("{} joined!\n".format(nickname).encode('utf8')))
-            client.send('Connected to server!'.encode('utf8'))
+            client_socket.send('Connected to server!'.encode('utf8'))
 
             # Start thread for this client
-            user_thread = threading.Thread(target=self.handle, args=(client, ))
+            user_thread = threading.Thread(target=self.handle, args=(client_socket, ))
             user_thread.start()
+            ping_thread = threading.Thread(target=self.ping, args=(address, ))
+            ping_thread.start()
 
     def run(self):
-        accept_thread = threading.Thread(target=self.accept)
-        accept_thread.start()
-        ping_thread = threading.Thread(target=self.ping)
-        ping_thread.start()
-        receive_ping_thread = threading.Thread(target=self.receive_ping)
-        receive_ping_thread.start()
-        check_host_ping_thread = threading.Thread(target=self.check_host_ping_time)
-        check_host_ping_thread.start()
+        if leaderFlag:
+            self.initLeaderFunctionality()
+            self.initLeaderHeartbeat()
+            accept_thread = threading.Thread(target=self.accept)
+            accept_thread.start()
+            #ping_thread = threading.Thread(target=self.ping)
+            #ping_thread.start()
+        else:
+            self.initClientHeartbeat()
+            receive_ping_thread = threading.Thread(target=self.receive_ping)
+            receive_ping_thread.start()
+            check_host_ping_thread = threading.Thread(target=self.check_host_ping_time)
+            check_host_ping_thread.start()
 
 
 class Client(threading.Thread):
@@ -164,12 +182,12 @@ class Client(threading.Thread):
         self.write_thread.start()
 
 if __name__=='__main__':
-    if not leaderFlag:
-        server = Server()
-        server.daemon = True
-        print("Starting server...\n")
-        server.start()
-        time.sleep(1)
+
+    server = Server()
+    server.daemon = True
+    print("Starting server...\n")
+    server.start()
+    time.sleep(1)
     
     print("Starting client...")
     client = Client()
