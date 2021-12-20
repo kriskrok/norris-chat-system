@@ -2,6 +2,7 @@ import socket
 import threading
 import os
 import time
+import pickle
 
 host = os.environ['HOSTNAME'] #IP for current Leader
 my_ip = os.environ['MYIP'] #This machine external IP
@@ -41,15 +42,19 @@ class Server(threading.Thread):
                 print(f'Host is dead, very dead been for {time_delta} seconds. Long live the host')
             else:
                 print("Host seems healthy")
+                print(nicknames)
     
     # This should prolly handle heartbeat and all the rest goodies
     def receive_ping(self):
         while True:
             try:
                 message, address = self.udp_socket.recvfrom(1024) # buffer size is 1024 bytes
-                message = message.decode('utf8')
+
+                message = pickle.loads(message)
                 print("received message: %s" % message) #Remove when everything is ok.
-                if message == 'ping':
+                if type(message) == list:
+                    nicknames = message
+                elif message == 'ping':
                     self.server_timestamp = time.time()
             except:
                 print("An error occured, the final days are upon us!")
@@ -59,7 +64,7 @@ class Server(threading.Thread):
             while True:
                 time.sleep(10)
                 try:
-                    self.udp_socket.sendto('ping'.encode('utf8'), (address[0], udp_port))
+                    self.udp_socket.sendto(pickle.dumps('ping'), (address[0], udp_port))
                     print('Pingasin')
                 except:
                     print("Ping failed!")
@@ -81,7 +86,7 @@ class Server(threading.Thread):
                 clients.remove(client)
                 client.close()
                 nickname = nicknames[index]
-                self.broadcast('{} left!'.format(nickname).encode('utf8'))
+                self.broadcast(pickle.dumps('{} left!'.format(nickname)))
                 nicknames.remove(nickname)
                 break
 
@@ -92,15 +97,16 @@ class Server(threading.Thread):
             print("Connected with {}".format(str(address)))
 
             # Ask nickname
-            client_socket.send('NICK'.encode('utf8'))
-            nickname = client_socket.recv(1024).decode('utf8')
+            client_socket.send(pickle.dumps('NICK'))
+            nickname = pickle.loads(client_socket.recv(1024))
             nicknames.append(nickname)
             clients.append(client_socket)
 
             # Print nickname
             print("Nickname is {}".format(nickname))
-            self.broadcast(("{} joined!\n".format(nickname).encode('utf8')))
-            client_socket.send('Connected to server!'.encode('utf8'))
+            self.broadcast(pickle.dumps("{} joined!\n".format(nickname)))
+            client_socket.send(pickle.dumps('Connected to server!'))
+            client_socket.send(pickle.dumps(nicknames))
 
             # Start thread for this client
             user_thread = threading.Thread(target=self.handle, args=(client_socket, ))
@@ -137,9 +143,9 @@ class Client(threading.Thread):
     def receive(self):
         while True:
             try:
-                message = self.client_socket.recv(1024).decode('utf8')
+                message = pickle.loads(self.client_socket.recv(1024))
                 if message == 'NICK':
-                    self.client_socket.send(self.nickname.encode('utf8'))
+                    self.client_socket.send(pickle.dumps(self.nickname))
                 else:
                     print(message)
             except:
@@ -152,7 +158,7 @@ class Client(threading.Thread):
             message = '{}: {}'.format(self.nickname, input(''))
             if message == 'quit':
                 print()
-            self.client_socket.send(message.encode('utf8'))
+            self.client_socket.send(pickle.dumps(message))
     
     def run(self):
         self.receive_thread = threading.Thread(target=self.receive)
