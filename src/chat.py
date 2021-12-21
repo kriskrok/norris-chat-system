@@ -4,11 +4,10 @@ import os
 import time
 import pickle
 
-#host = os.environ['HOSTNAME'] #IP for current Leader
-host = os.environ['MYIP'] #IP for current Leader
+#Required env variables
+host = os.environ['HOSTNAME'] #IP for current Leader
 my_ip = os.environ['MYIP'] #This machine external IP
-
-leaderFlag = True
+leader_flag = True if os.environ['LEADER'] == 'True' else False #Is this node leading?
 
 port = 50001
 udp_port = 50002
@@ -17,46 +16,78 @@ nicknames = [] #tuple with (address, 'nick')
 
 class Server(threading.Thread):
 
-    def __init__(self):
-        print('Hello from server init')
+    def __init__(self, client_thread):
+        #print('Hello from server init')
         threading.Thread.__init__(self) #this is required
-        #self.server_socket = ''
         self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.server_timestamp = ''
+        self.server_timestamp = 0
+        self.server_socket = None
+        self.client_thread = client_thread
 
-    
-    def init_leader_functionality(self):
-        #Server starts for every node, but only one is the Leader. Handle it and the election here
-        #This is called when the server class assumer its rightfull place as dear Leader
+    #Server starts for every node, but only one is the Leader. Handle it and the election here
+    #This is called when the server class assumes its rightfull place as dear Leader
+    def init_leader_functionality(self, hostip=host):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_socket.bind((host, port))
+        self.server_socket.bind((hostip, port))
         self.server_socket.listen(5)
+        #print('clientThread: ', self.client_thread)
 
     def init_client_heartbeat(self):
         self.udp_socket.bind(('', udp_port))
 
+    #Alas, appears to get stuck on after starting a new client, i.e., hangs.
+    def change_leader(self):
+        global host
+        self.new_host = nicknames[1][0]
+        #nicknames.remove[0]
+        
+        if self.new_host == my_ip:
+            #print('new host is me')
+            if self.server_socket is not None:
+                self.server_socket.close()
+                time.sleep(2)
+            self.init_leader_functionality(self.new_host)
+            #print('I am the captain now')
+            self.server_timestamp = time.time()
+
+            self.client_thread.join(1) #param in seconds to timeout
+            time.sleep(1)
+            #print('Client thread is alive : ', self.client_thread.is_alive())
+            host = self.new_host
+            
+            accept_thread = threading.Thread(target=self.accept)
+            accept_thread.start()
+
+            client = Client()
+            client.start()
+
+
+    # This method finds out if ping timestamp is older than 15 seconds.
     def check_host_ping_time(self):
         while True:
             time.sleep(16)
             time_delta = time.time() - self.server_timestamp
             if time_delta > 15:
-                print(f'Host is dead, very dead been for {time_delta} seconds. Long live the host')
+                #print(f'Host is dead, very dead been for {time_delta} seconds. Long live the host')
+                self.change_leader()
+                break
             else:
-                print("Host seems healthy")
-                print(nicknames)
+                #print("Host seems healthy")
+                #print(nicknames)
+                pass
     
-    # This should prolly handle heartbeat and all the rest goodies
+    # This method only listens incoming pings from leader and update timestamp when ping arrives.
+    # If ping never arrives, wait will never end.
     def receive_ping(self):
         global nicknames
         while True:
             try:
                 message, address = self.udp_socket.recvfrom(1024) # buffer size is 1024 bytes
-
                 message = pickle.loads(message)
-                print("received message: %s" % message) #Remove when everything is ok.
+                #print("received message: %s" % message) #Remove when everything is ok.
                 if type(message) == list:
                     nicknames = message
-                    print('Received updated client list: ', nicknames)
+                    #print('Received updated client list: ', nicknames)
                 elif message == 'ping':
                     self.server_timestamp = time.time()
             except:
@@ -68,17 +99,17 @@ class Server(threading.Thread):
                 time.sleep(10)
                 try:
                     self.udp_socket.sendto(pickle.dumps('ping'), (address[0], udp_port))
-                    print('Pingasin')
+                    #print('Pinged')
                     self.udp_socket.sendto(pickle.dumps(nicknames), (address[0], udp_port))
                 except:
-                    print("Ping failed!")
+                    #print("Ping failed!")
                     break
 
     #WIP, had a succesfull dry-run, needs to be tested on multi-user env
     def send_client_list(self):
         for client in clients:
-            print('Sending client list to: ', client.getpeername()[0])
-            print('Hello from send_client_list', nicknames)
+            #print('Sending client list to: ', client.getpeername()[0])
+            #print('Hello from send_client_list', nicknames)
             self.udp_socket.sendto(pickle.dumps(nicknames), (client.getpeername()[0], udp_port))
 
     # Broadcast message to every client
@@ -106,7 +137,7 @@ class Server(threading.Thread):
         while True:
             # Accept connection
             client_socket, address = self.server_socket.accept() #address is a tuple ('IP', internal_port_num)
-            print("A new connection from {}".format(str(address[0])))
+            #print("A new connection from {}".format(str(address[0])))
             
             # Ask nickname
             client_socket.send(pickle.dumps('NICK'))
@@ -129,7 +160,7 @@ class Server(threading.Thread):
             #self.send_client_list() | test me!
 
     def run(self):
-        if leaderFlag:
+        if leader_flag:
             self.init_leader_functionality()
             accept_thread = threading.Thread(target=self.accept)
             accept_thread.start()
@@ -144,21 +175,25 @@ class Server(threading.Thread):
 class Client(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
+
+    def init_client_functionality(self):
+        global host
         try:
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            #print('Attempting to connect to host: ', host)
             self.client_socket.connect((host, port))
         except ConnectionRefusedError as err:
             raise SystemExit('Could not connect to leader %s, exiting.' % err)
         # Choose nickname
-        self.nickname = input("Kindly provide a nickname: ")      
-    
+        self.nickname = input("Kindly provide a nickname: ")    
+
     def receive(self):
         while True:
             try:
                 message = pickle.loads(self.client_socket.recv(1024))
                 if message == 'NICK':
                     self.client_socket.send(pickle.dumps(self.nickname))
-                else:
+                else:                        
                     print(message)
             except:
                 print("An error occurred!")
@@ -176,6 +211,7 @@ class Client(threading.Thread):
             self.client_socket.send(pickle.dumps(message))
     
     def run(self):
+        self.init_client_functionality()
         self.receive_thread = threading.Thread(target=self.receive)
         self.receive_thread.start()
         self.write_thread = threading.Thread(target=self.write)
@@ -184,12 +220,12 @@ class Client(threading.Thread):
 
 if __name__=='__main__':
 
-    server = Server()
+    client = Client()
+    server = Server(client_thread=client)
     server.daemon = True
     print("\tStarting server...")
     server.start()
     time.sleep(1)
-    
-    print("\tStarting client...")
-    client = Client()
+  
+    print("\tStarting client...")  
     client.start()
