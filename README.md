@@ -13,6 +13,7 @@ Teachers are able to find more detailed description in Final Report of the Proje
 
 - [Design plan](https://github.com/kriskrok/norris-chat-system/blob/main/documents/design_plan.md)
 - [Architecture diagram](https://github.com/kriskrok/norris-chat-system/blob/main/documents/updated_architecture-diagram.svg)
+- [Final report](https://github.com/kriskrok/norris-chat-system/blob/main/documents/group18_final_report.pdf)
 
 ## Use instructions
 
