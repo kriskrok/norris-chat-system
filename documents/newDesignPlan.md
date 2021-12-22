@@ -12,7 +12,7 @@ The project will be implemented with Python, KMV + QEMU (for virtual machines) a
 
 ### Architecture sketch
 
-![architecture_sketch](https://github.com/kriskrok/norris-file-system/blob/main/documents/system_architecture.drawio.png)
+![architecture_diagram](https://github.com/kriskrok/norris-file-system/blob/main/documents/updated_architecture-diagram.svg)
 
 ## Nodes
 
